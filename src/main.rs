@@ -8,20 +8,26 @@ use bsp::entry;
 use cortex_m::asm::wfi;
 use defmt::*;
 use defmt_rtt as _;
+use embedded_graphics::prelude::{IntoStorage, RgbColor, WebColors};
 // use cortex_m::singleton;
 // use hal::dma::{double_buffer, single_buffer, DMAExt};
-use hal::Clock;
+use hal::clocks::init_clocks_and_plls;
 use hal::gpio::{FunctionPio0, Pin};
 use hal::pac;
 use hal::pio::PIOExt;
 use hal::sio::Sio;
-use hal::clocks::init_clocks_and_plls;
 use hal::watchdog::Watchdog;
+use hal::Clock;
 use panic_halt as _;
-use rp2040_hal::pio::{Buffers, ShiftDirection};
 use rp2040_hal as hal;
+use rp2040_hal::pio::{Buffers, ShiftDirection};
 use rp_pico as bsp;
 
+use embedded_graphics::{
+    pixelcolor::Rgb565,
+    prelude::*,
+    primitives::{Circle, PrimitiveStyle, Rectangle},
+};
 use lib::{Pio16BitBus, ILI9488};
 
 #[entry]
@@ -127,12 +133,43 @@ fn main() -> ! {
 
     let di = Pio16BitBus::new(tx, dc);
     let mut display = ILI9488::new(di, Some(rst), Some(bl), 480, 320);
-    display.init(delay);
+    display.init(&mut delay).unwrap();
+
+    let colors = [
+        Rgb565::RED,
+        Rgb565::CSS_ORANGE,
+        Rgb565::YELLOW,
+        Rgb565::GREEN,
+        Rgb565::BLUE,
+        Rgb565::CSS_ROYAL_BLUE,
+        Rgb565::CSS_PURPLE,
+    ];
+
+    for _ in 0..1 {
+        display.clear(Rgb565::BLACK).unwrap();
+    }
 
     loop {
-        display.clear(0xf800);
-        display.clear(0x07e0);
-        display.clear(0x001f);
+        // for color in colors.iter() {
+        //     display.clear(*color).unwrap();
+        // }
+
+        // for color in colors.iter().rev() {
+        //     display.clear(*color).unwrap();
+        // }
+        for radius in (0..=240).step_by(10) {
+            Circle::with_center(Point::new(240, 160), radius)
+                .into_styled(PrimitiveStyle::with_stroke(Rgb565::RED, 2))
+                .draw(&mut display)
+                .unwrap();
+        }
+
+        // for radius in (10..=100).rev().step_by(10) {
+        //     Circle::with_center(Point::new(240, 160), radius)
+        //         .into_styled(PrimitiveStyle::with_stroke(Rgb565::BLACK, 3))
+        //         .draw(&mut display)
+        //         .unwrap();
+        // }
     }
 
     // TODO: DMA implementation
