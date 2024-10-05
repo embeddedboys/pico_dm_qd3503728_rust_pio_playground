@@ -116,88 +116,43 @@ where
             bl.set_high().unwrap();
         }
 
-        self.write_command(0xf7)?;
-        self.write_data(0xa9)?;
-        self.write_data(0x51)?;
-        self.write_data(0x2c)?;
-        self.write_data(0x82)?;
+        self.write_reg(&[0xf7, 0xa9, 0x51, 0x2c, 0x82])?;
 
-        self.write_command(0xc0)?;
-        self.write_data(0x11)?;
-        self.write_data(0x09)?;
+        self.write_reg(&[0xc0, 0x11, 0x09])?;
 
-        self.write_command(0xc1)?;
-        self.write_data(0x41)?;
+        self.write_reg(&[0xc1, 0x41])?;
 
-        self.write_command(0xc5)?;
-        self.write_data(0x00)?;
-        self.write_data(0x28)?;
-        self.write_data(0x80)?;
+        self.write_reg(&[0xc5, 0x00, 0x28, 0x80])?;
 
-        self.write_command(0xb1)?;
-        self.write_data(0xb0)?;
-        self.write_data(0x11)?;
+        self.write_reg(&[0xb1, 0xb0, 0x11])?;
 
-        self.write_command(0xb4)?;
-        self.write_data(0x02)?;
+        self.write_reg(&[0xb4, 0x02])?;
 
-        self.write_command(0xb6)?;
-        self.write_data(0x02)?;
-        self.write_data(0x22)?;
+        self.write_reg(&[0xb6, 0x02, 0x22])?;
 
-        self.write_command(0xb7)?;
-        self.write_data(0xc6)?;
+        self.write_reg(&[0xb7, 0xc6])?;
 
-        self.write_command(0xbe)?;
-        self.write_data(0x00)?;
-        self.write_data(0x04)?;
+        self.write_reg(&[0xbe, 0x00, 0x04])?;
 
-        self.write_command(0xe9)?;
-        self.write_data(0x00)?;
+        self.write_reg(&[0xe9, 0x00])?;
 
-        self.write_command(0x36)?;
-        self.write_data(0x8 | (1 << 5) | (1 << 6))?;
+        self.write_reg(&[0x36, 0x8 | (1 << 5) | (1 << 6)])?;
 
-        self.write_command(0x3a)?;
-        self.write_data(0x55)?;
+        self.write_reg(&[0x3a, 0x55])?;
 
-        self.write_command(0xe0)?;
-        self.write_data(0x00)?;
-        self.write_data(0x07)?;
-        self.write_data(0x10)?;
-        self.write_data(0x09)?;
-        self.write_data(0x17)?;
-        self.write_data(0x0b)?;
-        self.write_data(0x41)?;
-        self.write_data(0x89)?;
-        self.write_data(0x4b)?;
-        self.write_data(0x0a)?;
-        self.write_data(0x0c)?;
-        self.write_data(0x0e)?;
-        self.write_data(0x18)?;
-        self.write_data(0x1b)?;
-        self.write_data(0x0f)?;
+        self.write_reg(&[
+            0xe0, 0x00, 0x07, 0x10, 0x09, 0x17, 0x0b, 0x41, 0x89, 0x4b, 0x0a, 0x0c, 0x0e, 0x18,
+            0x1b, 0x0f,
+        ])?;
 
-        self.write_command(0xe1)?;
-        self.write_data(0x00)?;
-        self.write_data(0x17)?;
-        self.write_data(0x1a)?;
-        self.write_data(0x04)?;
-        self.write_data(0x0e)?;
-        self.write_data(0x06)?;
-        self.write_data(0x2f)?;
-        self.write_data(0x45)?;
-        self.write_data(0x43)?;
-        self.write_data(0x02)?;
-        self.write_data(0x0a)?;
-        self.write_data(0x09)?;
-        self.write_data(0x32)?;
-        self.write_data(0x36)?;
-        self.write_data(0x0f)?;
+        self.write_reg(&[
+            0xe1, 0x00, 0x17, 0x1a, 0x04, 0x0e, 0x06, 0x2f, 0x45, 0x43, 0x02, 0x0a, 0x09, 0x32,
+            0x36, 0x0f,
+        ])?;
 
-        self.write_command(0x11)?;
+        self.write_reg(&[0x11])?;
         delay_source.delay_ms(60);
-        self.write_command(0x29)?;
+        self.write_reg(&[0x29])?;
 
         Ok(())
     }
@@ -214,19 +169,23 @@ where
     }
 
     pub fn set_addr_win(&mut self, xs: u16, ys: u16, xe: u16, ye: u16) -> Result {
-        self.write_command(0x2A)?;
-        self.write_data((xs >> 8) as u8)?;
-        self.write_data((xs & 0xFF) as u8)?;
-        self.write_data((xe >> 8) as u8)?;
-        self.write_data((xe & 0xFF) as u8)?;
+        self.write_reg(&[
+            0x2A,
+            (xs >> 8) as u8,
+            (xs & 0xFF) as u8,
+            (xe >> 8) as u8,
+            (xe & 0xFF) as u8,
+        ])?;
 
-        self.write_command(0x2B)?;
-        self.write_data((ys >> 8) as u8)?;
-        self.write_data((ys & 0xFF) as u8)?;
-        self.write_data((ye >> 8) as u8)?;
-        self.write_data((ye & 0xFF) as u8)?;
+        self.write_reg(&[
+            0x2B,
+            (ys >> 8) as u8,
+            (ys & 0xFF) as u8,
+            (ye >> 8) as u8,
+            (ye & 0xFF) as u8,
+        ])?;
 
-        // self.write_command(0x2C)?;
+        self.write_reg(&[0x2C])?;
         Ok(())
     }
 
@@ -234,12 +193,10 @@ where
         let mut buf = [color.into_storage()];
         let slice = buf.as_mut();
         let size = (self.size_x as u32) * (self.size_y as u32);
-        self.set_addr_win(0, 0, self.size_x, self.size_y)?;
+        self.set_addr_win(0, 0, self.size_x - 1, self.size_y - 1)?;
 
-        self.write_command(0x2C)?;
         for _ in 0..size {
             self.write_data16(slice)?;
-            // self.write_data16(slice)?;
         }
         Ok(())
     }
@@ -274,6 +231,14 @@ where
 
     pub fn write_data(&mut self, buf: u8) -> Result {
         self.di.send_data(DataFormat::U8(&[buf]))?;
+        Ok(())
+    }
+
+    pub fn write_reg(&mut self, seq: &[u8]) -> Result {
+        self.write_command(seq[0])?;
+        for val in &seq[1..] {
+            self.write_data(*val)?;
+        }
         Ok(())
     }
 
