@@ -30,9 +30,10 @@ where
         for pixel in pixels {
             let x = pixel.0.x as u16;
             let y = pixel.0.y as u16;
-            self.set_addr_win(x, y, x, y)?;
             let mut buf = [pixel.1.into_storage()];
             let slice = buf.as_mut();
+
+            self.set_addr_win(x, y, x, y)?;
             self.write_data16(slice)?
         }
         Ok(())
@@ -56,10 +57,10 @@ where
         let xe = bottom_right.x as u16;
         let ye = bottom_right.y as u16;
 
-        self.set_addr_win(xs, ys, xe, ye)?;
         let count = area.size.width * area.size.height;
         let colors = core::iter::repeat(color).take(count.try_into().unwrap());
-        self.write_command(0x2C)?;
+
+        self.set_addr_win(xs, ys, xe, ye)?;
         self.write_pixels(colors)?;
         Ok(())
     }

@@ -5,22 +5,31 @@
 #![no_main]
 
 use bsp::entry;
-use cortex_m::asm::wfi;
 use defmt::*;
 use defmt_rtt as _;
-use embedded_graphics::prelude::{IntoStorage, RgbColor, WebColors};
+use fugit::{HertzU32, RateExtU32};
 // use cortex_m::singleton;
-// use hal::dma::{double_buffer, single_buffer, DMAExt};
-use hal::clocks::init_clocks_and_plls;
-use hal::gpio::{FunctionPio0, Pin};
-use hal::pac;
-use hal::pio::PIOExt;
-use hal::sio::Sio;
-use hal::watchdog::Watchdog;
-use hal::Clock;
+use hal::{
+    clocks::{ClocksManager, InitError},
+    dma::{double_buffer, single_buffer, DMAExt},
+    gpio::{FunctionPio0, Pin},
+    pac,
+    pac::vreg_and_chip_reset::vreg::VSEL_A,
+    pio::{Buffers, PIOExt, ShiftDirection},
+    pll::{
+        common_configs::{PLL_SYS_125MHZ, PLL_USB_48MHZ},
+        setup_pll_blocking,
+    },
+    sio::Sio,
+    vreg::set_voltage,
+    watchdog::Watchdog,
+    xosc::setup_xosc_blocking,
+    Clock,
+};
 use panic_halt as _;
 use rp2040_hal as hal;
-use rp2040_hal::pio::{Buffers, ShiftDirection};
+
+const XOSC_CRYSTAL_FREQ: u32 = 12_000_000; // Typically found in BSP crates
 use rp_pico as bsp;
 
 use embedded_graphics::{
@@ -28,7 +37,8 @@ use embedded_graphics::{
     prelude::*,
     primitives::{Circle, PrimitiveStyle, Rectangle},
 };
-use lib::{Pio16BitBus, ILI9488};
+use lib::{overclock, Pio16BitBus, ILI9488};
+use overclock::PLL_SYS_250MHZ;
 
 #[entry]
 fn main() -> ! {
@@ -38,18 +48,37 @@ fn main() -> ! {
     let mut watchdog = Watchdog::new(pac.WATCHDOG);
     let sio = Sio::new(pac.SIO);
 
-    let external_xtal_freq_hz = 12_000_000u32;
-    let clocks = init_clocks_and_plls(
-        external_xtal_freq_hz,
-        pac.XOSC,
-        pac.CLOCKS,
+    set_voltage(&mut pac.VREG_AND_CHIP_RESET, VSEL_A::VOLTAGE1_10);
+
+    let xosc = setup_xosc_blocking(pac.XOSC, XOSC_CRYSTAL_FREQ.Hz())
+        .map_err(InitError::XoscErr)
+        .ok()
+        .unwrap();
+    let mut clocks = ClocksManager::new(pac.CLOCKS);
+
+    let pll_sys = setup_pll_blocking(
         pac.PLL_SYS,
-        pac.PLL_USB,
+        xosc.operating_frequency().into(),
+        PLL_SYS_250MHZ,
+        &mut clocks,
         &mut pac.RESETS,
-        &mut watchdog,
     )
-    .ok()
+    .map_err(InitError::PllError)
     .unwrap();
+    let pll_usb = setup_pll_blocking(
+        pac.PLL_USB,
+        xosc.operating_frequency().into(),
+        PLL_USB_48MHZ,
+        &mut clocks,
+        &mut pac.RESETS,
+    )
+    .map_err(InitError::PllError)
+    .unwrap();
+
+    clocks
+        .init_default(&xosc, &pll_sys, &pll_usb)
+        .map_err(InitError::ClockError)
+        .unwrap();
 
     let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
 
@@ -141,8 +170,8 @@ fn main() -> ! {
         Rgb565::YELLOW,
         Rgb565::GREEN,
         Rgb565::BLUE,
-        Rgb565::CSS_ROYAL_BLUE,
-        Rgb565::CSS_PURPLE,
+        Rgb565::CSS_INDIGO,
+        Rgb565::CSS_VIOLET,
     ];
 
     for _ in 0..1 {
@@ -150,19 +179,21 @@ fn main() -> ! {
     }
 
     loop {
-        // for color in colors.iter() {
-        //     display.clear(*color).unwrap();
-        // }
-
-        // for color in colors.iter().rev() {
-        //     display.clear(*color).unwrap();
-        // }
-        for radius in (0..=240).step_by(10) {
-            Circle::with_center(Point::new(240, 160), radius)
-                .into_styled(PrimitiveStyle::with_stroke(Rgb565::RED, 2))
-                .draw(&mut display)
-                .unwrap();
+        for color in colors.iter() {
+            display.clear(*color).unwrap();
+            delay.delay_ms(41);
         }
+
+        for color in colors.iter().rev() {
+            display.clear(*color).unwrap();
+            delay.delay_ms(41);
+        }
+        // for radius in (0..=240).step_by(10) {
+        //     Circle::with_center(Point::new(240, 160), radius)
+        //         .into_styled(PrimitiveStyle::with_stroke(Rgb565::RED, 2))
+        //         .draw(&mut display)
+        //         .unwrap();
+        // }
 
         // for radius in (10..=100).rev().step_by(10) {
         //     Circle::with_center(Point::new(240, 160), radius)

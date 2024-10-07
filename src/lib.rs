@@ -9,6 +9,7 @@ use embedded_hal::digital::OutputPin;
 use rp2040_hal::pio::{Tx, ValidStateMachine};
 
 mod graphics;
+pub mod overclock;
 
 type Result<T = ()> = core::result::Result<T, DisplayError>;
 
