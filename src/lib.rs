@@ -35,6 +35,7 @@ where
     fn write_iter(&mut self, iter: impl Iterator<Item = u8>) -> Result {
         for value in iter {
             self.tx.write(value as u32);
+            while !self.tx.is_empty() {}
         }
         Ok(())
     }
@@ -42,6 +43,7 @@ where
     fn write_iter16(&mut self, iter: impl Iterator<Item = u16>) -> Result {
         for value in iter {
             self.tx.write(value as u32);
+            while !self.tx.is_empty() {}
         }
         Ok(())
     }
